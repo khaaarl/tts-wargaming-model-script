@@ -1,10 +1,5 @@
 local scriptingFunctions
-local ritualPoints = 0
-local minRitualPoints = 0
-local maxRitualPoints = 99
-local nobleDeedPoints = 0
-local minNobleDeedPoints = 0
-local maxNobleDeedPoints = 6
+local counterState = {}
 local measuringCircles = {}
 local currentHighlightColor = nil
 local previousHighlightColor = nil
@@ -100,8 +95,7 @@ function onSave()
         chosenBase = chosenBase,
         ymMeasuringCircles = ymMeasuringCircles,
         isRectangularMeasuring = isRectangularMeasuring,
-        ritualPoints = ritualPoints,
-        nobleDeedPoints = nobleDeedPoints
+        counterState = counterState
     }
     return JSON.encode(state)
 end
@@ -112,8 +106,7 @@ function onLoad(stateJSON)
         currentHighlightColor = state.currentHighlightColor
         chosenBase = state.chosenBase
         ymMeasuringCircles = state.ymMeasuringCircles
-        ritualPoints = state.ritualPoints or 0
-        nobleDeedPoints = state.nobleDeedPoints or 0
+        counterState = state.counterState or {}
         isRectangularMeasuring = state.isRectangularMeasuring
     end
     Wait.frames(function()
@@ -131,7 +124,7 @@ function onDrop(player_color)
   updateButtons()
 end
 
---[[ Button Stuff ]]--
+--[[ Button Counter Stuff ]]--
 
 function wantRituals()
     return string.find(self.getDescription(), "[Pp][Rr][Ii][Ee][Ss][Tt] *[(][0-9]+[)]") and true or false
@@ -145,40 +138,70 @@ function desiredButtonOffset()
 end
 
 function updateButtons()
-    local hasRituals = false
-    local hasNobleDeeds = false
+    local desc = self.getDescription()
+    local newCounterState = {}
+    for s in desc:gmatch("COUNTER: *[^\n]+") do
+        local name = string.match(s, "COUNTER: *([^,\n]+)")
+        local color = string.match(s, "COUNTER: *[^,\n]+, *(%x%x%x%x%x%x%x?%x?)") or "ffffff"
+        local min = string.match(s, "COUNTER: *[^,\n]+, *%x+, *(-?%d+)") or 0
+        local max = string.match(s, "COUNTER: *[^,\n]+, *%x+, *-?%d+, *(-?%d+)") or 1000
+        local current = min
+        for _, c in ipairs(counterState) do
+            if c.name == name then
+                current = c.current
+            end
+        end
+        table.insert(newCounterState, 1, {name=name, color=color, min=min, max=max, current=current})
+    end
+    counterState = newCounterState
+
+    local currentButtonLabels = {}
     local ypos = nil
     for _, button in pairs(self.getButtons() or {}) do
         ypos = ypos or button.position[2]
-        hasRituals = hasRituals or (button.label == "Ritual Points")
-        hasNobleDeeds = hasNobleDeeds or (button.label == "Noble Deed Points")
+        table.insert(currentButtonLabels, button.label)
     end
-    if hasRituals ~= wantRituals() or hasNobleDeeds ~= wantNobleDeeds() or (ypos ~= nil and math.abs(ypos - desiredButtonOffset()) > 0.01) then
+    local buttonsMatch = #counterState == #currentButtonLabels
+    for i, label in ipairs(currentButtonLabels) do
+        if (counterState[i] or {}).name ~= label then
+            buttonsMatch = false
+        end
+    end
+
+    if not buttonsMatch or (ypos ~= nil and math.abs(ypos - desiredButtonOffset()) > 0.01) then
         initializeButtons()
     end
 
     local buttonIx = 1
-    if wantRituals() then
-        self.editButton({index = buttonIx, label = tostring(ritualPoints)})
-        buttonIx = buttonIx + 2
-    end
-    if wantNobleDeeds() then
-        self.editButton({index = buttonIx, label = tostring(nobleDeedPoints)})
+    for _, c in ipairs(counterState) do
+        self.editButton({index = buttonIx, label = tostring(c.current)})
         buttonIx = buttonIx + 2
     end
 end
 
-function addSubRituals(_obj, _color, alt_click)
+function addSubCounter(ix, alt_click)
+    local c = counterState[ix]
+    if not c then return end
     local mod = alt_click and -1 or 1
-    ritualPoints = math.min(math.max(ritualPoints + mod, minRitualPoints), maxRitualPoints)
+    c.current = math.min(math.max(c.current + mod, c.min), c.max)
     updateButtons()
+end
+function addSubCounter1(_obj, _color, alt_click)
+    addSubCounter(1, alt_click)
+end
+function addSubCounter2(_obj, _color, alt_click)
+    addSubCounter(2, alt_click)
+end
+function addSubCounter3(_obj, _color, alt_click)
+    addSubCounter(3, alt_click)
+end
+function addSubCounter4(_obj, _color, alt_click)
+    addSubCounter(4, alt_click)
+end
+function addSubCounter5(_obj, _color, alt_click)
+    addSubCounter(5, alt_click)
 end
 
-function addSubNobleDeeds(_obj, _color, alt_click)
-    local mod = alt_click and -1 or 1
-    nobleDeedPoints = math.min(math.max(nobleDeedPoints + mod, minNobleDeedPoints), maxNobleDeedPoints)
-    updateButtons()
-end
 
 function initializeButtons()
     -- Backwards iteration over possibly-nil getButtons to avoid bizarre lockup.
@@ -197,26 +220,20 @@ function initializeButtons()
         color = {0,0,0,0}
     }
     local ypos = desiredButtonOffset()
-    if wantRituals() then
-        params.label = "Ritual Points"
-        params.click_function = "addSubRituals"
-        params.font_color = {255/255,0/255,0/255,255}
+    for ix, c in ipairs(counterState) do
+        if ix > 5 then break end -- Can't count that high :(
+        params.label = c.name
+        params.click_function = "addSubCounter" .. tostring(ix)
+        params.font_color = {
+            tonumber(c.color:sub(1,2),16)/255,
+            tonumber(c.color:sub(3,4),16)/255,
+            tonumber(c.color:sub(5,6),16)/255,
+            255
+        }
         params.position = {0, ypos, 0}
         self.createButton(params)
         ypos = ypos + 0.5
-        params.label = tostring(ritualPoints)
-        params.position = {0, ypos, 0}
-        self.createButton(params)
-        ypos = ypos + 0.5
-    end
-    if wantNobleDeeds() then
-        params.label = "Noble Deed Points"
-        params.click_function = "addSubNobleDeeds"
-        params.font_color = {125/255,206/255,123/255,255}
-        params.position = {0, ypos, 0}
-        self.createButton(params)
-        ypos = ypos + 0.5
-        params.label = tostring(nobleDeedPoints)
+        params.label = tostring(c.current)
         params.position = {0, ypos, 0}
         self.createButton(params)
         ypos = ypos + 0.5
