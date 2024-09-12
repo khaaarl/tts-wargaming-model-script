@@ -126,12 +126,6 @@ end
 
 --[[ Button Counter Stuff ]]--
 
-function wantRituals()
-    return string.find(self.getDescription(), "[Pp][Rr][Ii][Ee][Ss][Tt] *[(][0-9]+[)]") and true or false
-end
-function wantNobleDeeds()
-    return string.find(self.getDescription(), "NOBLEDEEDS") and true or false
-end
 function desiredButtonOffset()
     local _,_, yposStr = self.getDescription():find("BUTTON_OFFSET *= *([0-9]+[.]?[0-9]*)")
     return tonumber(yposStr or "2.0")
@@ -155,28 +149,7 @@ function updateButtons()
     end
     counterState = newCounterState
 
-    local currentButtonLabels = {}
-    local ypos = nil
-    for _, button in pairs(self.getButtons() or {}) do
-        ypos = ypos or button.position[2]
-        table.insert(currentButtonLabels, button.label)
-    end
-    local buttonsMatch = #counterState == #currentButtonLabels
-    for i, label in ipairs(currentButtonLabels) do
-        if (counterState[i] or {}).name ~= label then
-            buttonsMatch = false
-        end
-    end
-
-    if not buttonsMatch or (ypos ~= nil and math.abs(ypos - desiredButtonOffset()) > 0.01) then
-        initializeButtons()
-    end
-
-    local buttonIx = 1
-    for _, c in ipairs(counterState) do
-        self.editButton({index = buttonIx, label = tostring(c.current)})
-        buttonIx = buttonIx + 4
-    end
+    initializeButtons()
 end
 
 function addSubCounter(ix, alt_click)
