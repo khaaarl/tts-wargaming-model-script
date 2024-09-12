@@ -175,7 +175,7 @@ function updateButtons()
     local buttonIx = 1
     for _, c in ipairs(counterState) do
         self.editButton({index = buttonIx, label = tostring(c.current)})
-        buttonIx = buttonIx + 2
+        buttonIx = buttonIx + 4
     end
 end
 
@@ -212,7 +212,6 @@ function initializeButtons()
     end
     local params = {
         function_owner=self,
-        rotation={270,270,90},
         height=500,
         width=500,
         font_size=250,
@@ -224,17 +223,29 @@ function initializeButtons()
         if ix > 5 then break end -- Can't count that high :(
         params.label = c.name
         params.click_function = "addSubCounter" .. tostring(ix)
-        params.font_color = {
+        local font_color = {
             tonumber(c.color:sub(1,2),16)/255,
             tonumber(c.color:sub(3,4),16)/255,
             tonumber(c.color:sub(5,6),16)/255,
             255
         }
         params.position = {0, ypos, 0}
+        params.font_color = font_color
+        params.rotation={270,270,90}
+        self.createButton(params)
+        params.position = {0, ypos, 0}
+        params.font_color = {0,0,0,0}
+        params.rotation={90,270,90}
         self.createButton(params)
         ypos = ypos + 0.5
         params.label = tostring(c.current)
         params.position = {0, ypos, 0}
+        params.font_color = font_color
+        params.rotation={270,270,90}
+        self.createButton(params)
+        params.position = {0, ypos, 0}
+        params.font_color = {0,0,0,0}
+        params.rotation={90,270,90}
         self.createButton(params)
         ypos = ypos + 0.5
     end
