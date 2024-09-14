@@ -29,3 +29,4 @@ If the script is attached to a model, you get the following features:
 3. Drag a save file or save folder onto `tts_wargaming_model_script_updater.py`. You should see a window with text in it, it should work for a while, then tell you to press enter to exit.
 
 This will search through the file(s)/folder(s) for save files that contain older versions of the script attached to models, and replace them with the script currently in this repo as you have downloaded it.
+ 
