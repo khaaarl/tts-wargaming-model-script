@@ -15,11 +15,11 @@ If the script is attached to a model, you get the following features:
     2. 6/7 will change the base size, in case the auto-detected base size was incorrect.
     3. 8 will change back and forth from rectangular measuring, useful for models not on round/oval bases but instead are more boxy, like a lot of transport vehicles.
     4. 9 will cycle through colors.
-3. Stabilization can be enabled by including "STABILIZEME" anywhere in the model's description. If you don't want it to show when hovering, consider placing it in bbcode color tag with zero alpha, like "[00000000]STABILIZEME[-]".
-4. Hovering Counters can be added to a model by including counter info in the description.
+3. Stabilization can be enabled by including "STABILIZEME" anywhere in the model's description or GM notes. If you don't want it to show when hovering, consider placing it in bbcode color tag with zero alpha, like "[00000000]STABILIZEME[-]".
+4. Hovering Counters can be added to a model by including counter info in the description or GM notes.
     1. Each should look like "COUNTER:Noble Deeds, 77bb77, 0, 6" where "Noble Deeds" will be the name/label of the counter, "77bb77" is any hexadecimal color, 0 is the minimum, and 6 is the maximum. Only the name/label is required; the others are optional. You may include multiple counters if desired.
-    2. Optionally, add "BUTTON_OFFSET=4.5" in the description somewhere to indicate the height of the hovering counters in inches (4.5 inches in this example).
-    3. After changing the model's description, pick it up and drop it to trigger the code reevaluation of your description.
+    2. Optionally, add "BUTTON_OFFSET=4.5" in the description or GM notes somewhere to indicate the height of the hovering counters in inches (4.5 inches in this example).
+    3. After changing the model's description or GM notes, pick it up and drop it to trigger the code reevaluation.
     4. Left-clicking and right-clicking on a counter will cause its number to go up or down, bounded by the specified minimum and maximum.
 
 ## Usage of the updater python script
