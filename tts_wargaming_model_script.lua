@@ -127,12 +127,13 @@ end
 --[[ Button Counter Stuff ]]--
 
 function desiredButtonOffset()
-    local _,_, yposStr = self.getDescription():find("BUTTON_OFFSET *= *([0-9]+[.]?[0-9]*)")
+    local desc = self.getDescription() .. "\n" .. self.getGMNotes()
+    local _,_, yposStr = desc:find("BUTTON_OFFSET *= *([0-9]+[.]?[0-9]*)")
     return tonumber(yposStr or "2.0")
 end
 
 function updateButtons()
-    local desc = self.getDescription()
+    local desc = self.getDescription() .. "\n" .. self.getGMNotes()
     local newCounterState = {}
     for s in desc:gmatch("COUNTER: *[^\n]+") do
         local name = string.match(s, "COUNTER: *([^,\n]+)")
@@ -461,7 +462,7 @@ function changeModelWoundCount(mod, target)
     target.setName(newName)
 
     -- If we have a fancy name and are in age of sigmar, update all the matching names
-    local fancyName = string.match(name, "([0-9]+/[0-9]+ *[[][^\n]+)")
+    local fancyName = string.match(name, "([0-9]+/[0-9]+[^\n]* +[[][^\n]+)")
     if not fancyName then return end
     local description = target.getDescription()
     if not string.find(description, "Mo?v?e? +He?a?l?t?h? +[CB][oa]?n?[ti]?[rs]?[oh]?l? +Sa?v?e?") then return end
@@ -513,7 +514,8 @@ scriptingFunctions = {
 --[[ STABILIZATION ]]--
 
 function stabilize()
-  if not string.find(self.getDescription(), "STABILIZEME") then return end
+  local desc = self.getDescription() .. "\n" .. self.getGMNotes()
+  if not string.find(desc, "STABILIZEME") then return end
   self.getComponent("Rigidbody").set("freezeRotation", true)
 end
 
