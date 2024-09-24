@@ -1,4 +1,5 @@
-local matSurfaceGUIDs = {'4ee1f2', 'blahblahblah'}
+local matSurfaceGUIDs = {'4ee1f2', '2f74dd', '430b18'}
+local matSurfaceBlockerGUIDs = {'9cf194', 'deaf49'}
 local scriptingFunctions
 local counterState = {}
 local measuringCircles = {}
@@ -587,8 +588,9 @@ function enqueueRecount()
             local recounts =
                 Global.getTable("__WargamingModelNeedsRecount__") or {}
             if not recounts[name] then return end
+            recounts[name] = false
+            Global.setTable("__WargamingModelNeedsRecount__", recounts)
             local matchingObjects = {}
-            local numAliveModels = 0
             local allObjects = getObjects()
             for _, obj in pairs(allObjects) do
                 local nameMatches = false
@@ -604,25 +606,80 @@ function enqueueRecount()
                     table.insert(matchingObjects, obj)
                 end
             end
+            local matBounds = {} -- list of {x0, z0, x1, z1}
+            for _, guid in ipairs(matSurfaceGUIDs) do
+                local matObj = getObjectFromGUID(guid)
+                if matObj then
+                    local bounds = matObj.getBounds()
+                    local mB = {
+                        bounds.center.x - bounds.size.x / 2,
+                        bounds.center.x + bounds.size.x / 2,
+                        bounds.center.z - bounds.size.z / 2,
+                        bounds.center.z + bounds.size.z / 2
+                    }
+                    if bounds.size.x > 9 and bounds.size.z > 9 then
+                        table.insert(matBounds, mB)
+                    end
+                end
+            end
+            local excludeMatBounds = {} -- list of {x0, z0, x1, z1}
+            for _, guid in ipairs(matSurfaceBlockerGUIDs) do
+                local matObj = getObjectFromGUID(guid)
+                if matObj then
+                    local bounds = matObj.getBounds()
+                    local mB = {
+                        bounds.center.x - bounds.size.x / 2,
+                        bounds.center.x + bounds.size.x / 2,
+                        bounds.center.z - bounds.size.z / 2,
+                        bounds.center.z + bounds.size.z / 2
+                    }
+                    if bounds.size.x > 9 and bounds.size.z > 9 then
+                        table.insert(excludeMatBounds, mB)
+                    end
+                end
+            end
+            local numAliveModels = 0
             for _, obj in ipairs(matchingObjects) do
+                local isAlive = true
                 local rot = obj.getRotation()
-                if math.abs(rot.x) < 90 and math.abs(rot.z) < 90 then
-                    -- TODO: also check if on playing field, if such a field is present.
+                if math.abs(rot.x) > 90 or math.abs(rot.z) > 90 then
+                    isAlive = false
+                end
+                local bounds = obj.getBounds()
+                if isAlive and #excludeMatBounds > 0 then
+                    for _, mB in ipairs(excludeMatBounds) do
+                        if ((bounds.center.x > mB[1] and bounds.center.x < mB[2]) and
+                            (bounds.center.z > mB[3] and bounds.center.z < mB[4])) then
+                            isAlive = false
+                        end
+                    end
+                end
+                if isAlive and #matBounds > 0 then
+                    local inMat = false
+                    for _, mB in ipairs(matBounds) do
+                        if ((bounds.center.x > mB[1] and bounds.center.x < mB[2]) and
+                            (bounds.center.z > mB[3] and bounds.center.z < mB[4])) then
+                            inMat = true
+                        end
+                    end
+                    if not inMat then isAlive = false end
+                end
+                if isAlive then
                     numAliveModels = numAliveModels + 1
                 end
             end
             for _, obj in ipairs(matchingObjects) do
-                if #matchingObjects < 2 then break end
                 local lines = splitLines(obj.getName())
                 lines[2] = lines[2] or ""
+                local hadCount = string.find(lines[2], "^[0-9]+x ")
                 lines[2] = string.gsub(lines[2], "^[0-9]+x ", "")
                 if #matchingObjects > 1 then
                     lines[2] = tostring(numAliveModels) .. "x " .. lines[2]
                 end
-                obj.setName(table.concat(lines, "\n"))
+                if #matchingObjects > 1 or hadCount then
+                    obj.setName(table.concat(lines, "\n"))
+                end
             end
-            recounts[name] = false
-            Global.setTable("__WargamingModelNeedsRecount__", recounts)
         end, 30)
     end, 1)
 end
