@@ -18,7 +18,9 @@ def read_file(filename):
 
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
-SCRIPT_PATH = os.path.join(THIS_DIR, 'tts_wargaming_model_script.lua')
+SCRIPT_PATH = os.path.join(THIS_DIR, 'tts_wargaming_model_script.min.lua')
+if not os.path.exists(SCRIPT_PATH):
+    SCRIPT_PATH = os.path.join(THIS_DIR, 'tts_wargaming_model_script.lua')
 NEW_SCRIPT_ORIGINAL = read_file(SCRIPT_PATH)
 NEW_SCRIPT_HEADER = "--[[ TTS Wargaming Model Script! For more info, see https://github.com/khaaarl/tts-wargaming-model-script ]]--"
 NEW_SCRIPT = "\n".join([NEW_SCRIPT_HEADER, NEW_SCRIPT_ORIGINAL.strip()]).strip()
