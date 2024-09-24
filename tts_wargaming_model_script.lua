@@ -1,6 +1,5 @@
 local matSurfaceGUIDs = { '4ee1f2', '2f74dd', '430b18' }
 local matSurfaceBlockerGUIDs = { '9cf194', 'deaf49' }
-local scriptingFunctions
 local counterState = {}
 local measuringCircles = {}
 local currentHighlightColor = nil
@@ -71,7 +70,23 @@ function onScriptingButtonDown(index, playerColor)
 
   if hoveredObject ~= self then return end
 
-  scriptingFunctions[index](playerColor, hoveredObject, player)
+  if index == 2 then
+    ChangeModelWoundCount(-1, hoveredObject)
+  elseif index == 3 then
+    ChangeModelWoundCount(1, hoveredObject)
+  elseif index == 4 then
+    ChangeMeasurementCircle(1, hoveredObject)
+  elseif index == 5 then
+    ChangeMeasurementCircle(-1, hoveredObject)
+  elseif index == 6 then
+    AssignBase(-1, hoveredObject)
+  elseif index == 7 then
+    AssignBase(1, hoveredObject)
+  elseif index == 8 then
+    ToggleRectangularMeasuring(-1, hoveredObject)
+  elseif index == 9 then
+    ChangeColor(-1, hoveredObject)
+  end
 end
 
 ---@diagnostic disable-next-line: lowercase-global
@@ -546,25 +561,6 @@ function ChangeColor(playerColor, target)
   currentHighlightColor = nextColor
   ChangeMeasurementCircle(0, target)
 end
-
--- this needs to be defined after all scripting functions
-scriptingFunctions = {
-  None,
-  --[[2]]
-  function(playerColor, target) ChangeModelWoundCount(-1, target) end,
-  --[[3]]
-  function(playerColor, target) ChangeModelWoundCount(1, target) end,
-  --[[4]]
-  function(playerColor, target) ChangeMeasurementCircle(1, target) end,
-  --[[5]]
-  function(playerColor, target) ChangeMeasurementCircle(-1, target) end,
-  --[[6]]
-  function(playerColor, target) AssignBase(-1, target) end,
-  --[[7]]
-  function(playerColor, target) AssignBase(1, target) end,
-  --[[8]]
-  ToggleRectangularMeasuring, --[[9]] ChangeColor, None, None
-}
 
 --[[ STABILIZATION ]] --
 
