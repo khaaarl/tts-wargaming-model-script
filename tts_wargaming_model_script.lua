@@ -586,6 +586,7 @@ function enqueueRecount()
       name = string.match(myObjName, "^([^\n]*[[][^\n]+)")
     end
     if not name then return end
+    local rawFirstLine = splitLines(myObjName)[1]
     local recounts = Global.getTable("__WargamingModelNeedsRecount__") or {}
     recounts[name] = os.clock() + .5
     Global.setTable("__WargamingModelNeedsRecount__", recounts)
@@ -603,26 +604,17 @@ function enqueueRecount()
       end
       recounts[name] = false
       Global.setTable("__WargamingModelNeedsRecount__", recounts)
-      doRecountNow(name, isNumericName)
+      doRecountNow(rawFirstLine)
     end
     Wait.frames(runRecount, 30)
   end, 1)
 end
 
-function doRecountNow(name, isNumericName)
+function doRecountNow(rawFirstLine)
   local matchingObjects = {}
   local allObjects = getObjects()
   for _, obj in pairs(allObjects) do
-    local nameMatches = false
-    if isNumericName then
-      nameMatches = string.match(obj.getName(),
-            "^[^\n]*[0-9]+/[0-9]+([^\n]*[[][^\n]+)") ==
-          name
-    else
-      nameMatches = string.match(obj.getName(),
-        "^([^\n]*[[][^\n]+)") == name
-    end
-    if nameMatches then
+    if splitLines(obj.getName())[1] == rawFirstLine then
       table.insert(matchingObjects, obj)
     end
   end
