@@ -1,3 +1,7 @@
+.vscode
+workspace.code-workspace
+*.min.lua
+
 node_modules
 package.json
 package-lock.json

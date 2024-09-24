@@ -25,29 +25,29 @@ local VALID_BASE_SIZES_IN_MM = {
 --[[ UTILITIES ]] --
 
 -- Return the first index with the given value (or nil if not found).
-function indexOf(array, value)
+function IndexOf(array, value)
   for i, v in ipairs(array) do if v == value then return i end end
   return nil
 end
 
-function deepcopy(orig)
+function DeepCopy(orig)
   local orig_type = type(orig)
   local copy
   if orig_type == 'table' then
     copy = {}
     for orig_key, orig_value in next, orig, nil do
-      copy[deepcopy(orig_key)] = deepcopy(orig_value)
+      copy[DeepCopy(orig_key)] = DeepCopy(orig_value)
     end
-    setmetatable(copy, deepcopy(getmetatable(orig)))
+    setmetatable(copy, DeepCopy(getmetatable(orig)))
   else -- number, string, boolean, etc
     copy = orig
   end
   return copy
 end
 
-function none() end
+function None() end
 
-function splitLines(s)
+function SplitLines(s)
   s = string.gsub(s, "\r\n", "\n")
   local lines = {}
   local delimiter = "\n"
@@ -64,6 +64,7 @@ end
 
 --[[ EVENT HANDLERS ]] --
 
+---@diagnostic disable-next-line: lowercase-global
 function onScriptingButtonDown(index, playerColor)
   local player = Player[playerColor]
   local hoveredObject = player.getHoverObject()
@@ -73,6 +74,7 @@ function onScriptingButtonDown(index, playerColor)
   scriptingFunctions[index](playerColor, hoveredObject, player)
 end
 
+---@diagnostic disable-next-line: lowercase-global
 function onSave()
   local state = {
     currentHighlightColor = currentHighlightColor,
@@ -84,6 +86,7 @@ function onSave()
   return JSON.encode(state)
 end
 
+---@diagnostic disable-next-line: lowercase-global
 function onLoad(stateJSON)
   if stateJSON and stateJSON ~= "" then
     local state = JSON.decode(stateJSON)
@@ -94,37 +97,40 @@ function onLoad(stateJSON)
     isRectangularMeasuring = state.isRectangularMeasuring
   end
   Wait.frames(function()
-    stabilize()
-    updateButtons()
-    enqueueRecount()
+    Stabilize()
+    UpdateButtons()
+    EnqueueRecount()
   end, 1)
 end
 
+---@diagnostic disable-next-line: lowercase-global
 function onPickUp(player_color)
-  destabilize()
-  enqueueRecount()
+  Destabilize()
+  EnqueueRecount()
 end
 
+---@diagnostic disable-next-line: lowercase-global
 function onDrop(player_color)
-  stabilize()
-  updateButtons()
-  enqueueRecount()
+  Stabilize()
+  UpdateButtons()
+  EnqueueRecount()
 end
 
+---@diagnostic disable-next-line: lowercase-global
 function onRotate(spin, flip, player_color, old_spin, old_flip)
-  updateButtons()
-  enqueueRecount()
+  UpdateButtons()
+  EnqueueRecount()
 end
 
 --[[ Button Counter Stuff ]] --
 
-function desiredButtonOffset()
+function DesiredButtonOffset()
   local desc = self.getDescription() .. "\n" .. self.getGMNotes()
   local _, _, yposStr = desc:find("BUTTON_OFFSET *= *([0-9]+[.]?[0-9]*)")
   return tonumber(yposStr or "2.0")
 end
 
-function updateButtons()
+function UpdateButtons()
   local desc = self.getDescription() .. "\n" .. self.getGMNotes()
   local newCounterState = {}
   for s in desc:gmatch("COUNTER: *[^\n]+") do
@@ -149,28 +155,28 @@ function updateButtons()
   end
   counterState = newCounterState
 
-  initializeButtons()
+  InitializeButtons()
 end
 
-function addSubCounter(ix, alt_click)
+function AddSubCounter(ix, alt_click)
   local c = counterState[ix]
   if not c then return end
   local mod = alt_click and -1 or 1
   c.current = math.min(math.max(c.current + mod, c.min), c.max)
-  updateButtons()
+  UpdateButtons()
 end
 
-function addSubCounter1(_obj, _color, alt_click) addSubCounter(1, alt_click) end
+function AddSubCounter1(_obj, _color, alt_click) AddSubCounter(1, alt_click) end
 
-function addSubCounter2(_obj, _color, alt_click) addSubCounter(2, alt_click) end
+function AddSubCounter2(_obj, _color, alt_click) AddSubCounter(2, alt_click) end
 
-function addSubCounter3(_obj, _color, alt_click) addSubCounter(3, alt_click) end
+function AddSubCounter3(_obj, _color, alt_click) AddSubCounter(3, alt_click) end
 
-function addSubCounter4(_obj, _color, alt_click) addSubCounter(4, alt_click) end
+function AddSubCounter4(_obj, _color, alt_click) AddSubCounter(4, alt_click) end
 
-function addSubCounter5(_obj, _color, alt_click) addSubCounter(5, alt_click) end
+function AddSubCounter5(_obj, _color, alt_click) AddSubCounter(5, alt_click) end
 
-function initializeButtons()
+function InitializeButtons()
   -- Backwards iteration over possibly-nil getButtons to avoid bizarre lockup.
   local numButtons = #(self.getButtons() or {})
   while numButtons > 0 do
@@ -185,11 +191,11 @@ function initializeButtons()
     scale = { x = 1, y = 1, z = 1 },
     color = { 0, 0, 0, 0 }
   }
-  local ypos = desiredButtonOffset()
+  local ypos = DesiredButtonOffset()
   for ix, c in ipairs(counterState) do
     if ix > 5 then break end -- Can't count that high :(
     params.label = c.name
-    params.click_function = "addSubCounter" .. tostring(ix)
+    params.click_function = "AddSubCounter" .. tostring(ix)
     local font_color = {
       tonumber(c.color:sub(1, 2), 16) / 255,
       tonumber(c.color:sub(3, 4), 16) / 255,
@@ -219,16 +225,16 @@ end
 
 --[[ MEASURING CIRCLE FUNCTIONS ]] --
 
-function toggleRectangularMeasuring(playerColor, target)
+function ToggleRectangularMeasuring(playerColor, target)
   isRectangularMeasuring = not isRectangularMeasuring
-  changeMeasurementCircle(0, target)
+  ChangeMeasurementCircle(0, target)
 end
 
-function assignBase(inc, target)
-  local savedBase = deepcopy(chosenBase)
+function AssignBase(inc, target)
+  local savedBase = DeepCopy(chosenBase)
 
   if savedBase == nil then
-    changeMeasurementCircle(0, target, determineBaseInInches(target))
+    ChangeMeasurementCircle(0, target, DetermineBaseInInches(target))
   else
     local newIdx = savedBase.baseIdx + inc
 
@@ -245,12 +251,12 @@ function assignBase(inc, target)
 
     chosenBase = newBase
 
-    changeMeasurementCircle(0, target, newBase.base)
+    ChangeMeasurementCircle(0, target, newBase.base)
   end
 end
 
-function determineBaseInInches(model)
-  local savedBase = deepcopy(chosenBase)
+function DetermineBaseInInches(model)
+  local savedBase = DeepCopy(chosenBase)
 
   if savedBase ~= nil then
     return savedBase.base
@@ -291,8 +297,8 @@ function determineBaseInInches(model)
   end
 end
 
-function changeMeasurementCircle(change, target, presetBase)
-  local measuringRings = deepcopy(ymMeasuringCircles)
+function ChangeMeasurementCircle(change, target, presetBase)
+  local measuringRings = DeepCopy(ymMeasuringCircles)
   local currentColor = currentHighlightColor
   local currentColorRadius
 
@@ -337,24 +343,24 @@ function changeMeasurementCircle(change, target, presetBase)
       local modelBounds = target.getBoundsNormalized()
 
       if newRadius > 0 then
-        measuringPoints = getRectangleVectorPoints(newRadius,
+        measuringPoints = GetRectangleVectorPoints(newRadius,
           modelBounds.size.x /
           2,
           modelBounds.size.z /
           2, target)
-        basePoints = getRectangleVectorPoints(0, modelBounds.size.x / 2,
+        basePoints = GetRectangleVectorPoints(0, modelBounds.size.x / 2,
           modelBounds.size.z / 2,
           target)
       end
     else
       local baseRadiuses = (presetBase == nil) and
-          determineBaseInInches(target) or presetBase
+          DetermineBaseInInches(target) or presetBase
 
       if newRadius > 0 then
-        measuringPoints = getCircleVectorPoints(newRadius,
+        measuringPoints = GetCircleVectorPoints(newRadius,
           baseRadiuses.x,
           baseRadiuses.z, target)
-        basePoints = getCircleVectorPoints(0, baseRadiuses.x,
+        basePoints = GetCircleVectorPoints(0, baseRadiuses.x,
           baseRadiuses.z, target)
       end
     end
@@ -375,7 +381,7 @@ function changeMeasurementCircle(change, target, presetBase)
   ymMeasuringCircles = measuringRings
 end
 
-function getCircleVectorPoints(radius, baseX, baseZ, obj)
+function GetCircleVectorPoints(radius, baseX, baseZ, obj)
   local result = {}
   local scaleFactor = 1 / obj.getScale().x
   local rotationDegrees = obj.getRotation().y
@@ -393,7 +399,7 @@ function getCircleVectorPoints(radius, baseX, baseZ, obj)
   return result
 end
 
-function getRectangleVectorPoints(radius, sizeX, sizeZ, obj)
+function GetRectangleVectorPoints(radius, sizeX, sizeZ, obj)
   local result = {}
   local scaleFactor = 1 / obj.getScale().x
 
@@ -483,7 +489,7 @@ function getRectangleVectorPoints(radius, sizeX, sizeZ, obj)
   return result
 end
 
-function changeWoundCountString(mod, s)
+function ChangeWoundCountString(mod, s)
   local _, _, current, total = s:find("([0-9]+)/([0-9]+)")
   if current == nil then return nil end
   current = math.max(tonumber(current) + mod, 0)
@@ -491,9 +497,9 @@ function changeWoundCountString(mod, s)
   return string.gsub(s, "([0-9]+)/([0-9]+)", current .. "/" .. total, 1)
 end
 
-function changeModelWoundCount(mod, target)
+function ChangeModelWoundCount(mod, target)
   local name = target.getName()
-  local newName = changeWoundCountString(mod, name)
+  local newName = ChangeWoundCountString(mod, name)
   if newName == nil then return end
 
   target.setName(newName)
@@ -509,13 +515,13 @@ function changeModelWoundCount(mod, target)
   for _, obj in pairs(getObjects()) do
     if string.match(obj.getName(), "([0-9]+/[0-9]+ *[[][^\n]+)") ==
         fancyName then
-      obj.setName(changeWoundCountString(mod, obj.getName()))
+      obj.setName(ChangeWoundCountString(mod, obj.getName()))
     end
   end
 end
 
 -- Changes color of aura. Does not support multiple auras at the moment.
-function changeColor(playerColor, target)
+function ChangeColor(playerColor, target)
   local currentColor = currentHighlightColor
   local colorWheel = {
     "pink", "purple", "blue", "teal", "green", "yellow", "orange", "red",
@@ -524,10 +530,10 @@ function changeColor(playerColor, target)
   local nextColor = "white"
   if currentColor ~= nil then
     nextColor =
-        colorWheel[(indexOf(colorWheel, currentColor) % #colorWheel) + 1]
+        colorWheel[(IndexOf(colorWheel, currentColor) % #colorWheel) + 1]
   end
 
-  local measuringRings = deepcopy(ymMeasuringCircles)
+  local measuringRings = DeepCopy(ymMeasuringCircles)
   if measuringRings ~= nil then
     for idx = #measuringRings, 1, -1 do
       if (measuringRings[idx].name == currentColor) or
@@ -538,43 +544,43 @@ function changeColor(playerColor, target)
     ymMeasuringCircles = measuringRings
   end
   currentHighlightColor = nextColor
-  changeMeasurementCircle(0, target)
+  ChangeMeasurementCircle(0, target)
 end
 
 -- this needs to be defined after all scripting functions
 scriptingFunctions = {
-  none,
+  None,
   --[[2]]
-  function(playerColor, target) changeModelWoundCount(-1, target) end,
+  function(playerColor, target) ChangeModelWoundCount(-1, target) end,
   --[[3]]
-  function(playerColor, target) changeModelWoundCount(1, target) end,
+  function(playerColor, target) ChangeModelWoundCount(1, target) end,
   --[[4]]
-  function(playerColor, target) changeMeasurementCircle(1, target) end,
+  function(playerColor, target) ChangeMeasurementCircle(1, target) end,
   --[[5]]
-  function(playerColor, target) changeMeasurementCircle(-1, target) end,
+  function(playerColor, target) ChangeMeasurementCircle(-1, target) end,
   --[[6]]
-  function(playerColor, target) assignBase(-1, target) end,
+  function(playerColor, target) AssignBase(-1, target) end,
   --[[7]]
-  function(playerColor, target) assignBase(1, target) end,
+  function(playerColor, target) AssignBase(1, target) end,
   --[[8]]
-  toggleRectangularMeasuring, --[[9]] changeColor, none, none
+  ToggleRectangularMeasuring, --[[9]] ChangeColor, None, None
 }
 
 --[[ STABILIZATION ]] --
 
-function stabilize()
+function Stabilize()
   local desc = self.getDescription() .. "\n" .. self.getGMNotes()
   if not string.find(desc, "STABILIZEME") then return end
   self.getComponent("Rigidbody").set("freezeRotation", true)
 end
 
-function destabilize()
+function Destabilize()
   self.getComponent("Rigidbody").set("freezeRotation", false)
 end
 
 --[[ COUNTING MODELS ]] --
 
-function enqueueRecount()
+function EnqueueRecount()
   Wait.frames(function()
     local myObjName = self.getName()
     if not string.find(myObjName, "\n") then return end
@@ -586,7 +592,7 @@ function enqueueRecount()
       name = string.match(myObjName, "^([^\n]*[[][^\n]+)")
     end
     if not name then return end
-    local rawFirstLine = splitLines(myObjName)[1]
+    local rawFirstLine = SplitLines(myObjName)[1]
     local recounts = Global.getTable("__WargamingModelNeedsRecount__") or {}
     recounts[name] = os.clock() + .5
     Global.setTable("__WargamingModelNeedsRecount__", recounts)
@@ -604,17 +610,17 @@ function enqueueRecount()
       end
       recounts[name] = false
       Global.setTable("__WargamingModelNeedsRecount__", recounts)
-      doRecountNow(rawFirstLine)
+      DoRecountNow(rawFirstLine)
     end
     Wait.frames(runRecount, 30)
   end, 1)
 end
 
-function doRecountNow(rawFirstLine)
+function DoRecountNow(rawFirstLine)
   local matchingObjects = {}
   local allObjects = getObjects()
   for _, obj in pairs(allObjects) do
-    if splitLines(obj.getName())[1] == rawFirstLine then
+    if SplitLines(obj.getName())[1] == rawFirstLine then
       table.insert(matchingObjects, obj)
     end
   end
@@ -681,7 +687,7 @@ function doRecountNow(rawFirstLine)
     end
   end
   for _, obj in ipairs(matchingObjects) do
-    local lines = splitLines(obj.getName())
+    local lines = SplitLines(obj.getName())
     lines[2] = lines[2] or ""
     local hadCount = string.find(lines[2], "^[0-9]+x ")
     lines[2] = string.gsub(lines[2], "^[0-9]+x ", "")
