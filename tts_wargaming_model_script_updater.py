@@ -84,34 +84,32 @@ def update_file(filename):
     outfile.close()
     retriably_rename(tmp_filename, filename)
     print("Updated", filename)
+    # sleep so that modified time is in increasing order even when the mtime is only integer granularity.
+    time.sleep(1.2)
 
 
-def update_dir(dirname):
-    async_results = []
-    count = 0
-    seen_paths = []
-    infected_paths = []
-    for root, dirs, files in os.walk(dirname):
-        for filename in files:
-            if filename.endswith(".json"):
-                full_path = os.path.join(root, filename)
-                update_file(full_path)
-
-
-def update_thing(path):
+def expand_thing(path, file_list):
     if os.path.isfile(path):
-        update_file(path)
+        file_list.append(path)
     elif os.path.isdir(path):
-        update_dir(path)
+        for root, dirs, files in os.walk(path):
+            for filename in files:
+                if filename.endswith(".json"):
+                    file_list.append(os.path.join(root, filename))
     else:
-        print("File or directory not found; skipping.")
+        print("File or directory not found; skipping:", path)
+
 
 
 if __name__ == "__main__":
+    print(strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()), "Starting")
     things = list(sys.argv[1:])
+    file_list = []
     for item in things:
-        print(strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()), "Examining", item)
-        update_thing(item)
+        expand_thing(item, file_list)
+    file_list.sort(key=lambda path: (os.path.getmtime(path), path))
+    for file in file_list:
+        update_file(file)
     print(
         strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()), "Done. Press enter to exit."
     )
