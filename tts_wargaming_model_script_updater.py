@@ -18,9 +18,9 @@ def read_file(filename):
 
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
-SCRIPT_PATH = os.path.join(THIS_DIR, 'tts_wargaming_model_script.min.lua')
+SCRIPT_PATH = os.path.join(THIS_DIR, "tts_wargaming_model_script.min.lua")
 if not os.path.exists(SCRIPT_PATH):
-    SCRIPT_PATH = os.path.join(THIS_DIR, 'tts_wargaming_model_script.lua')
+    SCRIPT_PATH = os.path.join(THIS_DIR, "tts_wargaming_model_script.lua")
 NEW_SCRIPT_ORIGINAL = read_file(SCRIPT_PATH)
 NEW_SCRIPT_HEADER = "--[[ TTS Wargaming Model Script! For more info, see https://github.com/khaaarl/tts-wargaming-model-script ]]--"
 NEW_SCRIPT = "\n".join([NEW_SCRIPT_HEADER, NEW_SCRIPT_ORIGINAL.strip()]).strip()
@@ -31,9 +31,13 @@ def update_obj(obj):
     if isinstance(obj, dict):
         for k, v in dict(obj.items()).items():
             if k == "LuaScript" and isinstance(v, str):
-                if 'unitData' in v or v.strip() == NEW_SCRIPT:
+                if "unitData" in v or v.strip() == NEW_SCRIPT:
                     continue
-                if NEW_SCRIPT_HEADER in v or 'changeModelWoundCount' in v or 'BASE_SIZES_IN_MM' in v:
+                if (
+                    NEW_SCRIPT_HEADER in v
+                    or "changeModelWoundCount" in v
+                    or "BASE_SIZES_IN_MM" in v
+                ):
                     found_thing_to_update = True
                     obj["LuaScript"] = NEW_SCRIPT
             else:
@@ -100,7 +104,6 @@ def expand_thing(path, file_list):
         print("File or directory not found; skipping:", path)
 
 
-
 if __name__ == "__main__":
     print(strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()), "Starting")
     things = list(sys.argv[1:])
@@ -110,7 +113,5 @@ if __name__ == "__main__":
     file_list.sort(key=lambda path: (os.path.getmtime(path), path))
     for file in file_list:
         update_file(file)
-    print(
-        strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()), "Done. Press enter to exit."
-    )
+    print(strftime("%Y-%m-%dT%H:%M:%SZ", gmtime()), "Done. Press enter to exit.")
     input()
