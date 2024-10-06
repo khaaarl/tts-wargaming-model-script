@@ -513,26 +513,55 @@ function ChangeWoundCountString(mod, s)
 end
 
 function ChangeModelWoundCount(mod, target)
-  local name = target.getName()
-  local newName = ChangeWoundCountString(mod, name)
-  if newName == nil then return end
-
-  target.setName(newName)
-
-  -- If we have a fancy name and are in age of sigmar, update all the matching names
-  local fancyName = string.match(name, "([0-9]+/[0-9]+[^\n]* +[[][^\n]+)")
-  if not fancyName then return end
-  local description = target.getDescription()
-  if not string.find(description,
-        "Mo?v?e? +He?a?l?t?h? +[CB][oa]?n?[ti]?[rs]?[oh]?l? +Sa?v?e?") then
-    return
-  end
-  for _, obj in pairs(getObjects()) do
-    if string.match(obj.getName(), "([0-9]+/[0-9]+ *[[][^\n]+)") ==
-        fancyName then
-      obj.setName(ChangeWoundCountString(mod, obj.getName()))
+  if IsAoS(target) then
+    -- If we are in age of sigmar, update all the matching names
+    for _, obj in ipairs(GetUnitObjects(target)) do
+      local newName = ChangeWoundCountString(mod, obj.getName())
+      if newName then
+        obj.setName(newName)
+      end
+    end
+  else
+    local newName = ChangeWoundCountString(mod, target.getName())
+    if newName then
+      target.setName(newName)
     end
   end
+end
+
+function IsAoS(target)
+  target = target or self
+  if string.find(target.getDescription() or "",
+        "Mo?v?e? +He?a?l?t?h? +[CB][oa]?n?[ti]?[rs]?[oh]?l? +Sa?v?e?") then
+    return true
+  end
+  return false
+end
+
+function GetUnitIdAndFancyName(target)
+  target = target or self
+  local unitId = string.match(target.getGMNotes() or "", 'UNIT_ID="[^"]+"')
+  local name = target.getName() or ""
+  local fancyName = string.match(
+    name, "^[^\n]*[0-9]+/[0-9]+([^\n]* +[[][^\n]+)")
+  if not fancyName then
+    fancyName = string.match(name, "^([^\n]*[[][^\n]+)")
+  end
+  return unitId, fancyName
+end
+
+function GetUnitObjects(target)
+  target = target or self
+  local unitId, fancyName = GetUnitIdAndFancyName(target)
+  if not fancyName and not unitId then return { target } end
+  local objects = {}
+  for _, obj in pairs(getObjects()) do
+    local otherUnitId, otherFancyName = GetUnitIdAndFancyName(obj)
+    if unitId == otherUnitId and fancyName == otherFancyName then
+      table.insert(objects, obj)
+    end
+  end
+  return objects
 end
 
 -- Changes color of aura. Does not support multiple auras at the moment.
@@ -580,46 +609,38 @@ function EnqueueRecount()
   Wait.frames(function()
     local myObjName = self.getName()
     if not string.find(myObjName, "\n") then return end
-    local isNumericName = true
-    local name = string.match(myObjName,
-      "^[^\n]*[0-9]+/[0-9]+([^\n]*[[][^\n]+)")
-    if not name then
-      isNumericName = false
-      name = string.match(myObjName, "^([^\n]*[[][^\n]+)")
-    end
-    if not name then return end
-    local rawFirstLine = SplitLines(myObjName)[1]
+    local unitId, fancyName = GetUnitIdAndFancyName()
+    if not fancyName and not unitId then return end
+    local recountId = unitId or fancyName
     local recounts = Global.getTable("__WargamingModelNeedsRecount__") or {}
-    recounts[name] = os.clock() + .5
+    recounts[recountId] = os.clock() + .5
     Global.setTable("__WargamingModelNeedsRecount__", recounts)
     local runRecount = nil
     runRecount = function()
       assert(runRecount)
       local recounts = Global.getTable("__WargamingModelNeedsRecount__") or {}
-      if not recounts[name] then return end
+      if not recounts[recountId] then return end
       -- If another change has occurred relatively recently, we should wait a
       -- bit before updating.
       local now = os.clock()
-      if (tonumber(recounts[name]) or 0) > tonumber(now) then
+      if (tonumber(recounts[recountId]) or 0) > tonumber(now) then
         Wait.frames(runRecount, 10)
         return
       end
-      recounts[name] = false
+      recounts[recountId] = false
       Global.setTable("__WargamingModelNeedsRecount__", recounts)
-      DoRecountNow(rawFirstLine)
+      local madeChanges = DoRecountNow(self)
+      if madeChanges then
+        EnqueueRecount()
+      end
     end
     Wait.frames(runRecount, 30)
   end, 1)
 end
 
-function DoRecountNow(rawFirstLine)
-  local matchingObjects = {}
-  local allObjects = getObjects()
-  for _, obj in pairs(allObjects) do
-    if SplitLines(obj.getName())[1] == rawFirstLine then
-      table.insert(matchingObjects, obj)
-    end
-  end
+function DoRecountNow(target)
+  local madeChanges = false
+  local matchingObjects = GetUnitObjects(target)
   local matBounds = {} -- list of {x0, z0, x1, z1}
   for _, guid in ipairs(matSurfaceGUIDs) do
     local matObj = getObjectFromGUID(guid)
@@ -691,7 +712,12 @@ function DoRecountNow(rawFirstLine)
       lines[2] = tostring(numAliveModels) .. "x " .. lines[2]
     end
     if #matchingObjects > 1 or hadCount then
-      obj.setName(table.concat(lines, "\n"))
+      local newName = table.concat(lines, "\n")
+      if newName ~= obj.getName() then
+        obj.setName(newName)
+        madeChanges = true
+      end
     end
   end
+  return madeChanges
 end
