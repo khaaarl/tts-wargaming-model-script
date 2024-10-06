@@ -33,11 +33,7 @@ def update_obj(obj):
             if k == "LuaScript" and isinstance(v, str):
                 if "unitData" in v or v.strip() == NEW_SCRIPT:
                     continue
-                if (
-                    NEW_SCRIPT_HEADER in v
-                    or "changeModelWoundCount" in v
-                    or "BASE_SIZES_IN_MM" in v
-                ):
+                if v.strip().startswith(NEW_SCRIPT_HEADER):
                     found_thing_to_update = True
                     obj["LuaScript"] = NEW_SCRIPT
             else:
