@@ -543,9 +543,9 @@ function GetUnitIdAndFancyName(target)
   local unitId = string.match(target.getGMNotes() or "", 'UNIT_ID="[^"]+"')
   local name = target.getName() or ""
   local fancyName = string.match(
-    name, "^[^\n]*[0-9]+/[0-9]+([^\n]* +[[][^\n]+)")
+    name, "^[0-9]+/[0-9]+ +([[][^\n]+)")
   if not fancyName then
-    fancyName = string.match(name, "^([^\n]*[[][^\n]+)")
+    fancyName = string.match(name, "^([[][^\n]+)")
   end
   return unitId, fancyName
 end
