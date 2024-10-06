@@ -677,7 +677,7 @@ function DoRecountNow(target)
   for _, obj in ipairs(matchingObjects) do
     local isAlive = true
     local rot = obj.getRotation()
-    if math.abs(rot.x) > 90 or math.abs(rot.z) > 90 then
+    if math.abs(180 - rot.x) < 90 or math.abs(180 - rot.z) < 90 then
       isAlive = false
     end
     local bounds = obj.getBounds()
